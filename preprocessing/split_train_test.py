@@ -23,7 +23,7 @@ def full_set():
     df_test = df_test[df_test['userCode'].isin(user_train)]
     
     # print(df_train.head())
-    df_train = df_train.drop('date', axis=1)
+    df_train = df_train.drop(['date','year','month', 'day', 'hour'], axis=1)
     df_test = df_test[['userCode','project_id']].drop_duplicates(keep="first")
 
     print('df_train',df_train.shape)
@@ -59,4 +59,5 @@ def small_set():
     df_test.to_csv('./input/test_small.csv')
 
 if __name__ == '__main__':
-    small_set()
+    # small_set()
+    full_set()

@@ -16,13 +16,13 @@ train = pd.read_csv('./input/train_small.csv', parse_dates=['datetime'])
 test = pd.read_csv('./input/test_small.csv')
 
 # count userCode feature
-gp, name_col = features.count_duplicate(train, group_by=['userCode', 'project_id'])
-train = train.merge(gp, on='userCode', how='left')
-print((1, train[name_col].max()))
+gp, name_col = features.count_duplicate(train, group_cols=['userCode', 'project_id'])
+train = train.merge(gp, on=['userCode', 'project_id'], how='left')
+# print(name_col, train.head(), (1, train[name_col].max()))
 
 reader = Reader(rating_scale=(1, train[name_col].max()))
 
-trainset = Dataset.load_from_df(train[['userCode', 'project_id', name_col]], reader)
+trainset = Dataset.load_from_df(train[["userCode", "project_id", name_col]], reader)
 trainset = trainset.build_full_trainset()
 algo = SVD()
 algo.fit(trainset)
