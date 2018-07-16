@@ -12,15 +12,28 @@ from surprise import SVD
 from surprise import accuracy
 from surprise.model_selection import train_test_split
 
-train = pd.read_csv('./input/train_small.csv', parse_dates=['datetime'])
-test = pd.read_csv('./input/test_small.csv')
+train = pd.read_csv('./input/train.csv', parse_dates=['datetime'])
+test = pd.read_csv('./input/test.csv')
+
+# to remove usercode not in test
+# user_test = set(test['userCode'].values)
+# train = train[train['userCode'].isin(user_test)]
+# print(len(train), len(test))
 
 # count userCode feature
 gp, name_col = features.count_duplicate(train, group_cols=['userCode', 'project_id'])
 train = train.merge(gp, on=['userCode', 'project_id'], how='left')
 # print(name_col, train.head(), (1, train[name_col].max()))
 
-reader = Reader(rating_scale=(1, train[name_col].max()))
+#drop duplicate
+train = train.drop_duplicates(['userCode','project_id'],keep= 'last')
+print(len(train), len(test))
+
+scale = train[name_col].max()
+train[name_col] = train[name_col].apply(lambda x: x/scale)
+print('max: ',train[name_col].max())
+
+reader = Reader(rating_scale=(0, 1))
 
 trainset = Dataset.load_from_df(train[["userCode", "project_id", name_col]], reader)
 trainset = trainset.build_full_trainset()
