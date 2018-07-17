@@ -4,6 +4,8 @@ at http://www.benfrederickson.com/matrix-factorization/
 This code will automically download a HDF5 version of the dataset from
 GitHub when it is first run. The original dataset can also be found at
 http://www.dtic.upf.edu/~ocelma/MusicRecommendationDataset/lastfm-360K.html.
+
+chcp 65001
 """
 import argparse
 import codecs
@@ -100,6 +102,11 @@ def calculate_recommendations(output_filename, model_name="als"):
     """ Generates artist recommendations for each user in the dataset """
     # train the model based off input params
     artists, users, plays = get_lastfm()
+
+    print(artists.shape)
+    print(users.shape)
+    print(plays.shape)
+    return
 
     # create a model from the input data
     model = get_model(model_name)

@@ -29,6 +29,7 @@ train = train.merge(gp, on=['userCode', 'project_id'], how='left')
 train = train.drop_duplicates(['userCode','project_id'],keep= 'last')
 print(len(train), len(test))
 
+#to scale
 scale = train[name_col].max()
 train[name_col] = train[name_col].apply(lambda x: x/scale)
 print('max: ',train[name_col].max())
