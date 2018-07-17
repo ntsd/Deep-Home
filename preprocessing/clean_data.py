@@ -11,6 +11,7 @@ def clean_project_main():
     proj_main_size = len(proj_main)
     num_unique = proj_main.nunique()
     # print("Percentage of unique values in each column:\n{}".format(num_unique * 100/proj_main_size))
+    # Drop any columns with more than 30% missing values
     proj_main.drop(['created_at', 'lat', 'lon', 'project_name_th',
     'developer_id', 'brand_id','project_name_en'], axis=1, inplace=True)
 

@@ -8,6 +8,7 @@ np.random.seed(44)
 
 import sys
 sys.path.append('./')
+from features import features
 from metrics import average_precision
 
 # Define our recommend_items function with parameters
@@ -28,6 +29,7 @@ def recommend_items (userCode, n=10, items_to_ignore=[]):
     
     # Make predictions using our decision tree regression model
     predictions = clf.predict(x_userCode)
+    print(predictions)
     
     # Retrieve indices sorted by num_interact (in predictions) from max to min using argsort
     sorted_indices = np.argsort(predictions)[::-1]
@@ -51,6 +53,8 @@ def recommend_items (userCode, n=10, items_to_ignore=[]):
 
 if __name__ == '__main__':
     train = pd.read_csv('./input/train.csv')
+    # train = features.create_train(path='./input/train_large.csv',delimiter=',', to_csv=1)
+
     # Create X_train and y_train from our train data
     x_train = train.drop(['num_interact'], axis = 1)
     y_train = train['num_interact']
@@ -59,10 +63,11 @@ if __name__ == '__main__':
     clf = DecisionTreeRegressor()
     # Fit our train data to the model
     clf.fit(x_train, y_train)
+    print('fit model finished')
 
     # Read 'user_feature.csv' and 'item_feature.csv' using pandas
-    user_feat = pd.read_csv('user_feature.csv')
-    item_feat = pd.read_csv('item_feature.csv')
+    user_feat = pd.read_csv('./input/user_feature.csv')
+    item_feat = pd.read_csv('./input/item_feature.csv')
 
     # Call recommend_items on sample_userCode with 7 recommended projects and no ignored project ids
     # sample_userCode = '00005aba-5ebc-0821-f5a9-bacca40be125'

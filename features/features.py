@@ -62,7 +62,7 @@ def user_feature_csv():
     # Save 'userLog' dataframe to csv
     userLog.to_csv('./input/user_feature.csv', index = False)
 
-def create_train_csv(path='./input/userLog_201801_201802_for_participants.csv', delimiter=';'):
+def create_train(path='./input/userLog_201801_201802_for_participants.csv', delimiter=';', to_csv=0):
     # Read required features using pandas
     train = pd.read_csv(path, delimiter=delimiter) # load userLog
     item_feature = pd.read_csv('./input/item_feature.csv')
@@ -85,9 +85,16 @@ def create_train_csv(path='./input/userLog_201801_201802_for_participants.csv', 
     # drop userCode and project_id from train dataframe
     train = train.drop(['userCode','project_id'], axis = 1)
 
-    train.to_csv('./input/train.csv', index = False)
+    print(train.shape)
+    # drop missing value
+    train = train.dropna()
+    print(train.shape)
+
+    if to_csv:train.to_csv('./input/train.csv', index = False)
+
+    return train
 
 if __name__ == '__main__':
     # item_features_csv()
     # user_feature_csv()
-    create_train_csv(path='./input/train_large.csv',delimiter=',')
+    create_train(path='./input/train_large.csv',delimiter=',', to_csv=1)
