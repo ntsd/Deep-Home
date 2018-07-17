@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-import sklearn
+from sklearn.tree import DecisionTreeRegressor
 
 import random
 random.seed(44)
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     y_train = train['num_interact']
 
     # Create decision tree regression model
-    clf = sklearn.tree.DecisionTreeRegressor()
+    clf = DecisionTreeRegressor()
     # Fit our train data to the model
     clf.fit(x_train, y_train)
 
