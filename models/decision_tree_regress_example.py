@@ -2,6 +2,10 @@ import pandas as pd
 import numpy as np
 import sklearn
 
+import random
+random.seed(44)
+np.random.seed(44)
+
 import sys
 sys.path.append('./')
 from metrics import average_precision
