@@ -4,7 +4,7 @@ import datetime
 np.random.seed(44)
 
 
-def full_set():
+def large_set():
     user_log_df = pd.read_csv('./input/userLog_201801_201802_for_participants.csv', sep=';') 
     # Create datetime
     user_log_df['datetime'] = user_log_df.apply(lambda row : datetime.datetime(row['year'], row['month'], row['day'], row['hour']), axis=1)
@@ -28,8 +28,8 @@ def full_set():
 
     print('df_train',df_train.shape)
     print('df_test', df_test.shape)
-    df_train.to_csv('./input/train.csv')
-    df_test.to_csv('./input/test.csv')
+    df_train.to_csv('./input/train_large.csv')
+    df_test.to_csv('./input/test_large.csv')
 
 def small_set():
     user_log_df = pd.read_csv('./input/userLog_201801_201802_for_participants.csv', sep=';', nrows=100000) 
@@ -60,4 +60,4 @@ def small_set():
 
 if __name__ == '__main__':
     # small_set()
-    full_set()
+    large_set()
