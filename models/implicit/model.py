@@ -3,12 +3,14 @@ import scipy.sparse as sparse
 import random;random.seed(44)
 import numpy as np;np.random.seed(44)
 import implicit
+import logging
 
 import sys
 sys.path.append('./')
 from features import features
 from metrics import average_precision
 
+import tqdm
 from implicit.als import AlternatingLeastSquares
 from implicit.approximate_als import (AnnoyAlternatingLeastSquares, FaissAlternatingLeastSquares,
                                       NMSLibAlternatingLeastSquares)
@@ -27,6 +29,7 @@ MODELS = {"als":  AlternatingLeastSquares,
           "bpr": BayesianPersonalizedRanking,
           "bm25": BM25Recommender}
 
+model_name = 'als'
 
 def get_model(model_name):
     model_class = MODELS.get(model_name)
@@ -45,10 +48,13 @@ def get_model(model_name):
 
     return model_class(**params)
 
-train = pd.read_csv('./input/train_small.csv')
-test = pd.read_csv('./input/test_small.csv')
-
-model_name = 'bpr'
+is_test = 1
+if is_test:
+    train = pd.read_csv('./input/train_small.csv')
+    test = pd.read_csv('./input/test_small.csv')
+else:
+    train = pd.read_csv('./input/userLog_201801_201802_for_participants.csv')
+    test = pd.read_csv('./input/testing_users.csv')
 
 #todo replace with weight
 # count feature
@@ -67,11 +73,11 @@ del gp
 train = train[['userCode', 'project_id', rating]]
 
 # sort value
-train = train.sort_values(['userCode', 'project_id'])
+# train = train.sort_values(['userCode', 'project_id'])
 # print(train)
 
 # Get unique user 
-users = list(train['userCode'].unique())
+users = list(np.sort(train['userCode'].unique()))
 
 # Get unique project
 projects = list(train['project_id'].unique())
@@ -80,13 +86,13 @@ projects = list(train['project_id'].unique())
 rating_list = list(train[rating])
 
 # Get the associated row/column indices
-rows = train['userCode'].astype('category', categories=users).cat.codes
-cols = train['project_id'].astype('category', categories=projects).cat.codes
+rows = train['userCode'].astype(pd.api.types.CategoricalDtype(categories = users)).cat.codes
+cols = train['project_id'].astype(pd.api.types.CategoricalDtype(categories = projects)).cat.codes
 
 # print(len(users), len(user_cat), rows.shape)
 
 # create sparse matrix from data
-visit_sparse = sparse.csr_matrix((rating_list, (rows, cols)), shape=(len(users), len(projects)), dtype=np.float32).T.tocsr()
+visit_sparse = sparse.csr_matrix((rating_list, (cols, rows)), shape=(len(projects), len(users)), dtype=np.float32)
 
 del rows
 del cols
@@ -110,7 +116,7 @@ model = get_model(model_name)
 if issubclass(model.__class__, AlternatingLeastSquares):
     # lets weight these models by bm25weight.
     logging.debug("weighting matrix by bm25_weight")
-    plays = bm25_weight(plays, K1=100, B=0.8)
+    visit_sparse = bm25_weight(visit_sparse, K1=100, B=0.8)
 
     # also disable building approximate recommend index
     model.approximate_similar_items = False
@@ -122,17 +128,20 @@ visit_csr = visit_sparse.T.tocsr()
 # recom = model.recommend(userid=0, user_items=visit_csr, N=7)
 # print(recom)
 
-#evaluate
-actual_list = [[pid] for pid in test['project_id'].values]
 predicted_list = []
 
-for uid in test['userCode']:
-    recom = model.recommend(userid=users.index(uid), user_items=visit_csr, N=7)
-    predicted_list.append([projects[pindex] for pindex, _ in recom])
+with tqdm.tqdm(total=len(test)) as progress:
+    for uid in test['userCode']:
+        recom = model.recommend(userid=users.index(uid), user_items=visit_csr, N=7)
+        predicted_list.append([projects[pindex] for pindex, _ in recom])
+        progress.update(1)
 
-print('%.10f'%average_precision.mapk(actual_list, predicted_list, k=7))
+evaluate = is_test
+if evaluate:
+    actual_list = [[pid] for pid in test['project_id'].values]
+    print('%.10f'%average_precision.mapk(actual_list, predicted_list, k=7))
 
-to_csv = 1
+to_csv = not is_test
 if to_csv:
     test['project_id'] = [' '.join(map(str, pre)) for pre in predicted_list]
     test[['userCode','project_id']].to_csv('submission_{}.csv'.format(model_name), index=False)
