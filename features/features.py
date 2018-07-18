@@ -22,8 +22,8 @@ def item_features_csv():
     # print(project_unit_main.head(3))
 
     # Create dummie variable for column 'district_id','province_id','project_status','starting_price_range','unit_type_id','amount_bedroom','amount_bathroom','amount_car_parking'
-    # dummie_columns = ['district_id','province_id','project_status','starting_price_range','unit_type_id','amount_bedroom','amount_bathroom','amount_car_parking']
-    dummie_columns = ['district_id','province_id','unit_type_id']
+    dummie_columns = ['district_id','province_id','project_status','starting_price_range','unit_type_id','amount_bedroom','amount_bathroom','amount_car_parking']
+    # dummie_columns = ['district_id','province_id','unit_type_id']
     for i in dummie_columns:
         dummies = pd.get_dummies(project_unit_main[i], prefix = i)
         project_unit_main = pd.concat([project_unit_main, dummies], axis = 1)
@@ -78,19 +78,22 @@ def create_train(path='./input/userLog_201801_201802_for_participants.csv', deli
     train = train.groupby(['userCode','project_id']).sum().reset_index()
 
     # Merge user_feature to train on userCode
-    train = pd.merge(train, user_feature, on='userCode', how='left') 
+    train = train.merge(user_feature, on='userCode') 
     # Merge item_feature to train on project_id
-    train = pd.merge(train, item_feature, on='project_id', how='left')
+    train = train.merge(item_feature, on='project_id')
+    print(train.head())
 
     # drop userCode and project_id from train dataframe
     train = train.drop(['userCode','project_id'], axis = 1)
 
     print(train.shape)
     # drop missing value
-    train = train.dropna()
+    train = train.dropna(axis=0)
     print(train.shape)
 
-    if to_csv:train.to_csv('./input/train.csv', index = False)
+    if to_csv:
+        train.to_csv('./input/train.csv', index = False)
+        print('save train.csv success')
 
     return train
 

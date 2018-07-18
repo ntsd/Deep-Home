@@ -74,14 +74,18 @@ if __name__ == '__main__':
     # recommend_items(sample_userCode, 7)
 
     test = pd.read_csv('./input/test_large.csv')
-    #evaluate
-    actual_list = [[pid] for pid in test['project_id'].values]
+
     predicted_list = []
 
     for uid in test['userCode']:
         recom = recommend_items(uid, 7)
         predicted_list.append(recom)
 
-    print(float(average_precision.mapk(actual_list, predicted_list, k=7)))
+    evaluate = 1
+    if evaluate:#evaluate
+        actual_list = [[pid] for pid in test['project_id'].values]
+        print(float(average_precision.mapk(actual_list, predicted_list, k=7)))
 
+    test['project_id'] = [' '.join(map(str, pre)) for pre in predicted_list]
 
+    test.to_csv('submission.csv', index=False)

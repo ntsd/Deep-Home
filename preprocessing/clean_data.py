@@ -27,7 +27,7 @@ def clean_project_main():
     proj_main.drop(['percent_car_parking', 'highest_price', 'total_unit'], axis=1, inplace=True)
 
     # Drop rows with NaN columns
-    proj_main = proj_main.dropna()
+    proj_main = proj_main.dropna(axis=0)
 
     # All of them must be 0
     # proj_main_size = len(proj_main)
@@ -41,7 +41,7 @@ def clean_project_main():
     # proj_main['project_land_size_rai'] = proj_main['project_land_size_rai']*400
     # proj_main['project_land_size_ngan'] = proj_main['project_land_size_ngan']*100
     # print(proj_main[['project_land_size_ngan','project_land_size_wa','project_land_size_rai']].head())
-    # #get max vault
+    # # get max area
     # proj_main['landSize'] = proj_main[['project_land_size_ngan','project_land_size_wa','project_land_size_rai']].max(axis=1)
 
     #change price to 4 category  0 (lowest), 1 (low), 2 (medium), and 3 (high)
@@ -50,9 +50,9 @@ def clean_project_main():
     # Log Transform
     proj_main[i] = np.log(proj_main['starting_price'])
     q75, q50, q25 = np.percentile(proj_main.Log_starting_price.dropna(), [75 ,50, 25])
-    min = q25
-    mid = q50
-    max = q75
+    min_ = q25
+    mid_ = q50
+    max_ = q75
     # plt.figure(figsize=(10,8))
     # plt.subplot(211)
     # plt.xlim(proj_main[i].min(), proj_main[i].max()*1.1)
@@ -61,10 +61,10 @@ def clean_project_main():
     # plt.axvline(x=max)
     # ax = proj_main[i].plot(kind='kde')
     proj_main['starting_price_range'] = 0
-    proj_main.loc[proj_main[i] < min, 'starting_price_range'] = 0
-    proj_main.loc[((proj_main[i] > min) & (proj_main[i] < mid)), 'starting_price_range'] = 1
-    proj_main.loc[((proj_main[i] > mid) & (proj_main[i] < max)), 'starting_price_range'] = 2
-    proj_main.loc[proj_main[i] > max, 'starting_price_range'] = 3
+    proj_main.loc[proj_main[i] < min_, 'starting_price_range'] = 0
+    proj_main.loc[((proj_main[i] > min_) & (proj_main[i] < mid_)), 'starting_price_range'] = 1
+    proj_main.loc[((proj_main[i] > mid_) & (proj_main[i] < max_)), 'starting_price_range'] = 2
+    proj_main.loc[proj_main[i] > max_, 'starting_price_range'] = 3
     proj_main = proj_main.drop(['starting_price', i], axis = 1)
     # print(proj_main.head(3))
 
@@ -94,7 +94,7 @@ def clean_project_main():
         if (fac == 6):
             proj_main.at[prj,'facility_6'] = 1
 
-    proj_main = proj_main.dropna()
+    proj_main = proj_main.dropna(axis=0)
     
     # change project status A to 1 U to 0
     proj_main['project_status'] = proj_main['project_status'].apply(lambda x: 1 if x=='A' else 0)
@@ -118,6 +118,9 @@ def clean_project_unit():
     project_unit = project_unit.dropna(thresh = half_count, axis = 1)
     # project_unit.head(5)
 
+    # Method 1 : Fill missing values with mode grouped by unit_type_id and project_id,
+    # Method 2 : Fill missing values with mode grouped by unit_type_id only.
+
     # Preparing fill dataframe for method 2
     unit_type_mode = project_unit.drop(['project_id'], axis = 1)
     unit_type_mode = unit_type_mode.groupby(['unit_type_id']).agg(lambda x: stats.mode(x)[0][0]).reset_index()
@@ -127,9 +130,6 @@ def clean_project_unit():
     # Generate fill key-value by using unit_type_id as a main key
     fill_key_values = unit_type_mode.set_index('unit_type_id').to_dict(orient = 'index')
     print(fill_key_values)
-
-    # Method 1 : Fill missing values with mode grouped by unit_type_id and project_id,
-    # Method 2 : Fill missing values with mode grouped by unit_type_id only.
 
     # Do the Method 1
     project_unit = project_unit.groupby(['project_id','unit_type_id']).agg(lambda x: stats.mode(x)[0][0]).reset_index()
@@ -167,4 +167,4 @@ def clean_project_unit():
 
 if __name__ == '__main__':
     clean_project_main()
-    # clean_project_unit()
+    clean_project_unit()
