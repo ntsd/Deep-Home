@@ -20,8 +20,15 @@ def large_set():
 
     # delete test that userCode and project_id is in train
     df_test = df_test.merge(df_train,on=['userCode','project_id'], how='left', indicator=True).dropna()
-    # print(common)
     
+    # projects which are in training datasets
+    project_train = set(df_train['project_id'].values)
+    df_test = df_test[df_test['project_id'].isin(project_train)]
+    
+    # users which are in training datasets
+    user_train = set(df_train['userCode'].values)
+    df_test = df_test[df_test['userCode'].isin(user_train)]
+
     # print(df_train.head())
     # df_train = df_train.drop(['year','month', 'day', 'hour'], axis=1)
     df_test = df_test[['userCode','project_id']].drop_duplicates(subset='userCode', keep="first")
@@ -47,7 +54,14 @@ def small_set():
 
     # delete test that userCode and project_id is in train
     df_test = df_test.merge(df_train,on=['userCode','project_id'], how='left', indicator=True).dropna()
-    # print(common)
+
+    # projects which are in training datasets
+    project_train = set(df_train['project_id'].values)
+    df_test = df_test[df_test['project_id'].isin(project_train)]
+    
+    # users which are in training datasets
+    user_train = set(df_train['userCode'].values)
+    df_test = df_test[df_test['userCode'].isin(user_train)]
 
     # print(df_train.head())
     # df_train = df_train.drop(['year','month', 'day', 'hour'], axis=1)
@@ -59,5 +73,5 @@ def small_set():
     df_test.to_csv('./input/test_small.csv')
 
 if __name__ == '__main__':
-    # small_set()
-    large_set()
+    small_set()
+    # large_set()

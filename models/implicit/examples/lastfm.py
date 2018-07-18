@@ -103,9 +103,16 @@ def calculate_recommendations(output_filename, model_name="als"):
     # train the model based off input params
     artists, users, plays = get_lastfm()
 
-    print(artists.shape)
-    print(users.shape)
-    print(plays.shape)
+    # for i in range(len(users)):
+    #     print(users[i], end=' ')
+    #     for j in range(len(artists)):
+    #         if plays[i, j]!=0:
+    #             print(plays[i, j], end=' ')
+    #     print()
+
+    print(type(users),users.shape)
+    print(type(artists),artists.shape)
+    print(type(plays),plays.shape)
     return
 
     # create a model from the input data

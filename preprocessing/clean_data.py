@@ -97,7 +97,7 @@ def clean_project_main():
     proj_main = proj_main.dropna(axis=0)
     
     # change project status A to 1 U to 0
-    proj_main['project_status'] = proj_main['project_status'].apply(lambda x: 1 if x=='A' else 0)
+    # proj_main['project_status'] = proj_main['project_status'].apply(lambda x: 1 if x=='A' else 0)
 
     # print(proj_main.head(3))
     print(proj_main.shape)
