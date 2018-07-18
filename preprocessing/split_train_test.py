@@ -24,7 +24,7 @@ def large_set():
     
     # print(df_train.head())
     df_train = df_train.drop(['date','year','month', 'day', 'hour'], axis=1)
-    df_test = df_test[['userCode','project_id']].drop_duplicates(keep="first")
+    df_test = df_test[['userCode','project_id']].drop_duplicates(subset='userCode', keep="first")
 
     print('df_train',df_train.shape)
     print('df_test', df_test.shape)
@@ -37,7 +37,7 @@ def small_set():
     user_log_df['datetime'] = user_log_df.apply(lambda row : datetime.datetime(row['year'], row['month'], row['day'], row['hour']), axis=1)
 
     user_log_df['date'] = user_log_df['datetime'].map(lambda x : x.date())
-    date = datetime.date(2018, 1, 4)
+    date = datetime.date(2018, 1, 3)
     df_train = user_log_df[user_log_df.date <  date]
     df_test = user_log_df[user_log_df.date >=  date].sort_values(by = ['userCode', 'datetime'])
 
@@ -50,8 +50,8 @@ def small_set():
     df_test = df_test[df_test['userCode'].isin(user_train)]
     
     # print(df_train.head())
-    df_train = df_train.drop('date', axis=1)
-    df_test = df_test[['userCode','project_id']].drop_duplicates(keep="first")
+    df_train = df_train.drop(['date','year','month', 'day', 'hour'], axis=1)
+    df_test = df_test[['userCode','project_id']].drop_duplicates(subset='userCode', keep="first")
 
     print('df_train',df_train.shape)
     print('df_test', df_test.shape)
@@ -59,5 +59,5 @@ def small_set():
     df_test.to_csv('./input/test_small.csv')
 
 if __name__ == '__main__':
-    # small_set()
-    large_set()
+    small_set()
+    # large_set()

@@ -71,17 +71,21 @@ def create_train(path='./input/userLog_201801_201802_for_participants.csv', deli
     # Create new dataframe from userLog using only userCode and project_id column
     # print(userLog.head())
     train = train[['userCode','project_id']]
+
     # Create new column named num_interact with initial value equals 1
     train['num_interact'] = 1
 
     # Find total project view for each project by each individual user using group by with userCode and project_id
     train = train.groupby(['userCode','project_id']).sum().reset_index()
 
+    # create visited dict
+    visited_dict = train.groupby('userCode')['project_id'].apply(lambda x: list(x)).to_dict()
+
     # Merge user_feature to train on userCode
     train = train.merge(user_feature, on='userCode') 
     # Merge item_feature to train on project_id
     train = train.merge(item_feature, on='project_id')
-    print(train.head())
+    # print(train.head())
 
     # drop userCode and project_id from train dataframe
     train = train.drop(['userCode','project_id'], axis = 1)
@@ -95,9 +99,9 @@ def create_train(path='./input/userLog_201801_201802_for_participants.csv', deli
         train.to_csv('./input/train.csv', index = False)
         print('save train.csv success')
 
-    return train
+    return train, visited_dict
 
 if __name__ == '__main__':
-    # item_features_csv()
-    # user_feature_csv()
-    create_train(path='./input/train_large.csv',delimiter=',', to_csv=1)
+    item_features_csv()
+    user_feature_csv()
+    # create_train(path='./input/train_large.csv',delimiter=',', to_csv=1)

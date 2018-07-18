@@ -12,7 +12,7 @@ from features import features
 from metrics import average_precision
 
 # Define our recommend_items function with parameters
-def recommend_items (userCode, n=10, items_to_ignore=[]):
+def recommend_items (userCode, n=7, items_to_ignore=[]):
     
     # Get userCode's user feature from user_feat
     userCode_feat = user_feat[user_feat['userCode'] == userCode]
@@ -29,7 +29,7 @@ def recommend_items (userCode, n=10, items_to_ignore=[]):
     
     # Make predictions using our decision tree regression model
     predictions = clf.predict(x_userCode)
-    print(predictions)
+    # print(predictions)
     
     # Retrieve indices sorted by num_interact (in predictions) from max to min using argsort
     sorted_indices = np.argsort(predictions)[::-1]
@@ -51,9 +51,19 @@ def recommend_items (userCode, n=10, items_to_ignore=[]):
         if len(top_n) == n:
             return top_n
 
+def feature_imprtances(model):
+    importances = model.feature_importances_
+    indices = np.argsort(importances)[::-1]
+
+    # Print the feature ranking
+    print("Feature ranking:")
+
+    for f in range(x_train.shape[1]):
+        print("%d. feature %s (%f)" % (f + 1, x_train.columns[indices[f]], importances[indices[f]]))
+
 if __name__ == '__main__':
-    train = pd.read_csv('./input/train.csv')
-    # train = features.create_train(path='./input/train_large.csv',delimiter=',', to_csv=1)
+    # train = pd.read_csv('./input/train.csv')
+    train, visited_dict = features.create_train(path='./input/train_small.csv',delimiter=',', to_csv=0)
 
     # Create X_train and y_train from our train data
     x_train = train.drop(['num_interact'], axis = 1)
@@ -65,6 +75,8 @@ if __name__ == '__main__':
     clf.fit(x_train, y_train)
     print('fit model finished')
 
+    feature_imprtances(clf)
+
     # Read 'user_feature.csv' and 'item_feature.csv' using pandas
     user_feat = pd.read_csv('./input/user_feature.csv')
     item_feat = pd.read_csv('./input/item_feature.csv')
@@ -73,19 +85,21 @@ if __name__ == '__main__':
     # sample_userCode = '00005aba-5ebc-0821-f5a9-bacca40be125'
     # recommend_items(sample_userCode, 7)
 
-    test = pd.read_csv('./input/test_large.csv')
+    test = pd.read_csv('./input/test_small.csv')
 
     predicted_list = []
 
     for uid in test['userCode']:
-        recom = recommend_items(uid, 7)
+        # print(visited_dict[uid])
+        recom = recommend_items(uid, 7, items_to_ignore=visited_dict[uid]) # todo item ignore
         predicted_list.append(recom)
 
     evaluate = 1
     if evaluate:#evaluate
         actual_list = [[pid] for pid in test['project_id'].values]
-        print(float(average_precision.mapk(actual_list, predicted_list, k=7)))
+        print('{:.10f}'.format((average_precision.mapk(actual_list, predicted_list, k=7))))
 
-    test['project_id'] = [' '.join(map(str, pre)) for pre in predicted_list]
-
-    test.to_csv('submission.csv', index=False)
+    to_csv = 0
+    if to_csv:
+        test['project_id'] = [' '.join(map(str, pre)) for pre in predicted_list]
+        test.to_csv('submission.csv', index=False)
