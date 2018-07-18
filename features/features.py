@@ -22,8 +22,8 @@ def item_features_csv():
     # print(project_unit_main.head(3))
 
     # Create dummie variable for column 'district_id','province_id','project_status','starting_price_range','unit_type_id','amount_bedroom','amount_bathroom','amount_car_parking'
-    dummie_columns = ['district_id','province_id','project_status','starting_price_range','unit_type_id','amount_bedroom','amount_bathroom','amount_car_parking']
-    # dummie_columns = ['district_id','province_id','unit_type_id']
+    # dummie_columns = ['district_id','province_id','project_status','starting_price_range','unit_type_id','amount_bedroom','amount_bathroom','amount_car_parking']
+    dummie_columns = ['district_id','province_id','unit_type_id']
     for i in dummie_columns:
         dummies = pd.get_dummies(project_unit_main[i], prefix = i)
         project_unit_main = pd.concat([project_unit_main, dummies], axis = 1)
@@ -44,7 +44,7 @@ def user_feature_csv():
     userLog = pd.read_csv('./input/userLog_201801_201802_for_participants.csv', delimiter = ';')
 
     # Drop unused columns
-    userLog = userLog.drop(['year','month','day','hour'], axis = 1)
+    userLog = userLog.drop(['year','month','day'], axis = 1)# userLog.drop(['year','month','day','hour'], axis = 1)
 
     # create dummies variable for column 'requestedDevice','userAgent','pageReferrer' and also concat them into userLog (Don't Forget to drop used column)
     dummie_columns = ['requestedDevice','userAgent','pageReferrer']

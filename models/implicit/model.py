@@ -9,13 +9,13 @@ sys.path.append('./')
 from features import features
 from metrics import average_precision
 
-train = pd.read_csv('./input/train_small.csv', parse_dates=['datetime'])
+train = pd.read_csv('./input/train_small.csv')
 test = pd.read_csv('./input/test_small.csv')
 
 #todo replace with weight
 # count feature
-# gp, name_col = features.count_duplicate(train, group_cols=['userCode', 'project_id']) 
-# train = train.merge(gp, on=['userCode', 'project_id'], how='left')
+gp, name_col = features.count_duplicate(train, group_cols=['userCode', 'project_id']) 
+train = train.merge(gp, on=['userCode', 'project_id'], how='left')
 
 #drop duplicate
 train = train.drop_duplicates(['userCode','project_id'],keep='last')
@@ -85,4 +85,4 @@ for uid in test['userCode']:
 # actual_list = [[pid] for pid in test['project_id'].values]
 # predicted_list = [[rpid] for rpid in test['project_id'].values]
 
-print(float(average_precision.mapk(actual_list, predicted_list, k=7)))
+print('%.10f'%average_precision.mapk(actual_list, predicted_list, k=7))
