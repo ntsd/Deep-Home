@@ -6,24 +6,24 @@ np.random.seed(44)
 
 def large_set():
     user_log_df = pd.read_csv('./input/userLog_201801_201802_for_participants.csv', sep=';') 
-    # Create datetime
-    user_log_df['datetime'] = user_log_df.apply(lambda row : datetime.datetime(row['year'], row['month'], row['day'], row['hour']), axis=1)
-
-    user_log_df['date'] = user_log_df['datetime'].map(lambda x : x.date())
-    date = datetime.date(2018, 2, 20)
-    df_train = user_log_df[user_log_df.date <  date]
-    df_test = user_log_df[user_log_df.date >=  date].sort_values(by = ['userCode', 'datetime'])
-
-    # projects which are in training datasets
-    project_train = set(df_train['project_id'].values)
-    df_test = df_test[df_test['project_id'].isin(project_train)]
+    # split test to last in user
+    # get only duplicate
+    user_log_df = user_log_df[user_log_df.duplicated(subset='userCode',keep=False)]
+    print('only duplicate user', user_log_df.shape)
+    # to get last user duplicate
+    df_test = user_log_df.drop_duplicates(subset='userCode', keep="last")
+    # to drop last deplicate
+    df_train = user_log_df[user_log_df.userCode.duplicated(keep='last')]
     
-    # users which are in training datasets
-    user_train = set(df_train['userCode'].values)
-    df_test = df_test[df_test['userCode'].isin(user_train)]
+    print('df_train',df_train.shape)
+    print('df_test', df_test.shape)
+
+    # delete test that userCode and project_id is in train
+    df_test = df_test.merge(df_train,on=['userCode','project_id'], how='left', indicator=True).dropna()
+    # print(common)
     
     # print(df_train.head())
-    df_train = df_train.drop(['date','year','month', 'day', 'hour'], axis=1)
+    # df_train = df_train.drop(['year','month', 'day', 'hour'], axis=1)
     df_test = df_test[['userCode','project_id']].drop_duplicates(subset='userCode', keep="first")
 
     print('df_train',df_train.shape)
@@ -33,24 +33,24 @@ def large_set():
 
 def small_set():
     user_log_df = pd.read_csv('./input/userLog_201801_201802_for_participants.csv', sep=';', nrows=100000) 
-    # Create datetime
-    user_log_df['datetime'] = user_log_df.apply(lambda row : datetime.datetime(row['year'], row['month'], row['day'], row['hour']), axis=1)
-
-    user_log_df['date'] = user_log_df['datetime'].map(lambda x : x.date())
-    date = datetime.date(2018, 1, 3)
-    df_train = user_log_df[user_log_df.date <  date]
-    df_test = user_log_df[user_log_df.date >=  date].sort_values(by = ['userCode', 'datetime'])
-
-    # projects which are in training datasets
-    project_train = set(df_train['project_id'].values)
-    df_test = df_test[df_test['project_id'].isin(project_train)]
+    # split test to last in user
+    # get only duplicate
+    user_log_df = user_log_df[user_log_df.duplicated(subset='userCode',keep=False)]
+    print('only duplicate user', user_log_df.shape)
+    # to get last user duplicate
+    df_test = user_log_df.drop_duplicates(subset='userCode', keep="last")
+    # to drop last deplicate
+    df_train = user_log_df[user_log_df.userCode.duplicated(keep='last')]
     
-    # users which are in training datasets
-    user_train = set(df_train['userCode'].values)
-    df_test = df_test[df_test['userCode'].isin(user_train)]
-    
+    print('df_train',df_train.shape)
+    print('df_test', df_test.shape)
+
+    # delete test that userCode and project_id is in train
+    df_test = df_test.merge(df_train,on=['userCode','project_id'], how='left', indicator=True).dropna()
+    # print(common)
+
     # print(df_train.head())
-    df_train = df_train.drop(['date','year','month', 'day', 'hour'], axis=1)
+    # df_train = df_train.drop(['year','month', 'day', 'hour'], axis=1)
     df_test = df_test[['userCode','project_id']].drop_duplicates(subset='userCode', keep="first")
 
     print('df_train',df_train.shape)
@@ -59,5 +59,5 @@ def small_set():
     df_test.to_csv('./input/test_small.csv')
 
 if __name__ == '__main__':
-    small_set()
-    # large_set()
+    # small_set()
+    large_set()

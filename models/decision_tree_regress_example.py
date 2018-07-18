@@ -61,6 +61,21 @@ def feature_imprtances(model):
     for f in range(x_train.shape[1]):
         print("%d. feature %s (%f)" % (f + 1, x_train.columns[indices[f]], importances[indices[f]]))
 
+def ap_func(actual_list, recommend_list, k=7):
+    
+    m = len(actual_list)
+    recoms = []
+    precision = 0
+    for i, item_ in enumerate(recommend_list):
+        if item_ in actual_list:
+            recoms.append(1)
+            precision += round(sum(recoms[:i+1])/(i+1), 2)
+        else:
+            recoms.append(0)
+          
+    ap = round(precision/min(m, k), 2)
+    return ap
+
 if __name__ == '__main__':
     # train = pd.read_csv('./input/train.csv')
     train, visited_dict = features.create_train(path='./input/train_small.csv',delimiter=',', to_csv=0)
@@ -85,7 +100,7 @@ if __name__ == '__main__':
     # sample_userCode = '00005aba-5ebc-0821-f5a9-bacca40be125'
     # recommend_items(sample_userCode, 7)
 
-    test = pd.read_csv('./input/test_small.csv')
+    test = pd.read_csv('./input/test_small.csv', nrows=500)
 
     predicted_list = []
 
@@ -97,7 +112,7 @@ if __name__ == '__main__':
     evaluate = 1
     if evaluate:#evaluate
         actual_list = [[pid] for pid in test['project_id'].values]
-        print('{:.10f}'.format((average_precision.mapk(actual_list, predicted_list, k=7))))
+        print('{:.10f}'.format((ap_func(actual_list, predicted_list, k=7))))
 
     to_csv = 0
     if to_csv:
