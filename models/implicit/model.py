@@ -53,8 +53,8 @@ if is_test:
     train = pd.read_csv('./input/train_small.csv')
     test = pd.read_csv('./input/test_small.csv')
 else:
-    train = pd.read_csv('./input/userLog_201801_201802_for_participants.csv')
-    test = pd.read_csv('./input/testing_users.csv')
+    train = pd.read_csv('./input/userLog_201801_201802_for_participants.csv', delimiter=';')
+    test = pd.read_csv('./input/testing_users.csv', delimiter=';')
 
 #todo replace with weight
 # count feature
@@ -69,30 +69,38 @@ print(len(train), len(test))
 train = train.merge(gp, on=['userCode', 'project_id'], how='left')
 del gp
 
-#drop column
-train = train[['userCode', 'project_id', rating]]
+# df_train_pivot = (df_train_indexed.pivot(index = 'userCode', columns = 'project_id', values = rating)
+#                                   .fillna(0))
+# print(df_train_pivot.head(3))
+
+# df_train_matrix = df_train_pivot.values
+# print(df_train_matrix.shape)
+
+# df_train_indexed = df_train_indexed.set_index('userCode')
+# df_train_indexed.head(3)
 
 # sort value
-# train = train.sort_values(['userCode', 'project_id'])
+train = train.sort_values(['userCode', 'project_id'])
 # print(train)
+
 
 # Get unique user 
 users = list(np.sort(train['userCode'].unique()))
 
 # Get unique project
-projects = list(train['project_id'].unique())
+projects = list(np.sort(train['project_id'].unique()))
 
 # get rating
-rating_list = list(train[rating])
+rating_list = train[rating].tolist()
 
 # Get the associated row/column indices
-rows = train['userCode'].astype(pd.api.types.CategoricalDtype(categories = users)).cat.codes
-cols = train['project_id'].astype(pd.api.types.CategoricalDtype(categories = projects)).cat.codes
+rows = train.userCode.astype(pd.api.types.CategoricalDtype(categories = users)).cat.codes
+cols = train.project_id.astype(pd.api.types.CategoricalDtype(categories = projects)).cat.codes
 
 # print(len(users), len(user_cat), rows.shape)
 
 # create sparse matrix from data
-visit_sparse = sparse.csr_matrix((rating_list, (cols, rows)), shape=(len(projects), len(users)), dtype=np.float32)
+visit_sparse = sparse.csr_matrix((rating_list, (rows, cols)), shape=(len(users), len(projects)), dtype=np.float32).T.tocsr()
 
 del rows
 del cols

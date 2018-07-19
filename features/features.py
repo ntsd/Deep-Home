@@ -12,7 +12,7 @@ def prev_visits(data_df, target_df): # todo
 def last_visit(data_df, target_df): # todo
     pass
 
-def item_features_csv():
+def item_features(to_csv=0):
     # Read cleaned data from previous part using pandas
     project_unit = pd.read_csv('./input/cleaned_project_unit.csv')
     project_main = pd.read_csv('./input/cleaned_project_main.csv')
@@ -22,8 +22,9 @@ def item_features_csv():
     # print(project_unit_main.head(3))
 
     # Create dummie variable for column 'district_id','province_id','project_status','starting_price_range','unit_type_id','amount_bedroom','amount_bathroom','amount_car_parking'
-    # dummie_columns = ['district_id','province_id','project_status','starting_price_range','unit_type_id','amount_bedroom','amount_bathroom','amount_car_parking']
-    dummie_columns = ['district_id','province_id','unit_type_id']
+    # dummie_columns = ['district_id','province_id','project_status','starting_price_range','unit_type_id','amount_bedroom','amount_bathroom','amount_car_parking', 'hour']
+    # dummie_columns = ['district_id','province_id','unit_type_id']
+    dummie_columns = []
     for i in dummie_columns:
         dummies = pd.get_dummies(project_unit_main[i], prefix = i)
         project_unit_main = pd.concat([project_unit_main, dummies], axis = 1)
@@ -38,9 +39,12 @@ def item_features_csv():
     item_feature = binary_features.merge(con_features, on = 'project_id')
 
     # Save project_unit_main dataframe to csv
-    item_feature.to_csv('./input/item_feature.csv', index = False)
+    if to_csv:
+        item_feature.to_csv('./input/item_feature.csv', index = False)
 
-def user_feature_csv():
+    return item_feature
+
+def user_feature(to_csv=0):
     userLog = pd.read_csv('./input/userLog_201801_201802_for_participants.csv', delimiter = ';')
 
     # Drop unused columns
@@ -60,7 +64,10 @@ def user_feature_csv():
     userLog = userLog.drop('project_id', axis = 1)
 
     # Save 'userLog' dataframe to csv
-    userLog.to_csv('./input/user_feature.csv', index = False)
+    if to_csv:
+        userLog.to_csv('./input/user_feature.csv', index = False)
+
+    return userLog
 
 def create_train(path='./input/userLog_201801_201802_for_participants.csv', delimiter=';', to_csv=0):
     # Read required features using pandas
@@ -102,6 +109,6 @@ def create_train(path='./input/userLog_201801_201802_for_participants.csv', deli
     return train, visited_dict
 
 if __name__ == '__main__':
-    item_features_csv()
-    user_feature_csv()
+    item_features(to_csv=1)
+    user_feature(to_csv=1)
     # create_train(path='./input/train_large.csv',delimiter=',', to_csv=1)

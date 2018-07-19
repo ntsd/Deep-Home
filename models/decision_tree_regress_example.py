@@ -112,7 +112,7 @@ if __name__ == '__main__':
     evaluate = 1
     if evaluate:#evaluate
         actual_list = [[pid] for pid in test['project_id'].values]
-        print('{:.10f}'.format((ap_func(actual_list, predicted_list, k=7))))
+        print('{:.10f}'.format(average_precision.mapk(actual_list, predicted_list, k=7)))
 
     to_csv = 0
     if to_csv:
