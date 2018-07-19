@@ -33,7 +33,7 @@ project_count = train.groupby(['project_id']).size().to_frame('size')
 # print('mean {} std {}'.format(project_count.mean(), project_count.std()))
 # I think drop less than (mean - sd/2) that is 29.1
 min_interacted = 30 # project_count.mean()
-ignore_project = set(project_count[project_count > min_interacted].index) 
+ignore_project = set(project_count[project_count['size'] > min_interacted].index) 
 print('ignore_project ', len(ignore_project))
 
 
