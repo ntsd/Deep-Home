@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from scipy import stats
 
 def count_duplicate(data_df, group_cols=['userCode']):
@@ -21,37 +22,64 @@ def item_features(to_csv=0):
     project_unit_main = project_main.merge(project_unit, on = ['project_id'])
     # print(project_unit_main.head(3))
 
+    # do quantile data
+    quantile_columns = ['landSize', 'unit_functional_space_starting_size']
+    new_cols = []
+    for col in quantile_columns:
+        i = 'dummy_culumn'
+        project_unit_main[i] = np.log(project_unit_main[col])
+        q75, q50, q25 = np.percentile(project_unit_main[i].dropna(), [75 ,50, 25])
+        min_ = q25
+        mid_ = q50
+        max_ = q75
+        project_unit_main[col+'_range'] = 0
+        project_unit_main.loc[project_unit_main[i] < min_, col+'_range'] = 0
+        project_unit_main.loc[((project_unit_main[i] > min_) & (project_unit_main[i] < mid_)), col+'_range'] = 1
+        project_unit_main.loc[((project_unit_main[i] > mid_) & (project_unit_main[i] < max_)), col+'_range'] = 2
+        project_unit_main.loc[project_unit_main[i] > max_, col+'_range'] = 3
+        project_unit_main = project_unit_main.drop([col, i], axis = 1)
+        new_cols.append(col+'_range')
+
     # Create dummie variable for column 'district_id','province_id','project_status','starting_price_range','unit_type_id','amount_bedroom','amount_bathroom','amount_car_parking'
-    # dummie_columns = ['district_id','province_id','project_status','starting_price_range','unit_type_id','amount_bedroom','amount_bathroom','amount_car_parking', 'hour']
+    dummie_columns = new_cols + ['district_id','province_id','project_status','starting_price_range','unit_type_id','amount_bedroom','amount_bathroom','amount_car_parking']
     # dummie_columns = ['district_id','province_id','unit_type_id']
-    dummie_columns = []
     for i in dummie_columns:
         dummies = pd.get_dummies(project_unit_main[i], prefix = i)
         project_unit_main = pd.concat([project_unit_main, dummies], axis = 1)
         project_unit_main = project_unit_main.drop(i, axis = 1)
 
     # binary features
-    binary_features = project_unit_main[['project_id','landSize']]
-    binary_features = binary_features.groupby(['project_id']).max().reset_index()
-    # realed-value features
-    con_features = project_unit_main.drop(['landSize'], axis = 1)
-    con_features = con_features.groupby(['project_id']).agg(lambda x: stats.mode(x)[0][0]).reset_index()
-    item_feature = binary_features.merge(con_features, on = 'project_id')
+    # binary_features = project_unit_main[['project_id','landSize']]
+    # binary_features = binary_features.groupby(['project_id']).max().reset_index()
+    # # realed-value features
+    # con_features = project_unit_main.drop(['landSize'], axis = 1)
+    # con_features = con_features.groupby(['project_id']).agg(lambda x: stats.mode(x)[0][0]).reset_index()
+    # item_feature = binary_features.merge(con_features, on = 'project_id')
 
     # Save project_unit_main dataframe to csv
     if to_csv:
-        item_feature.to_csv('./input/item_feature.csv', index = False)
+        project_unit_main.to_csv('./input/item_feature.csv', index = False)
 
-    return item_feature
+    return project_unit_main
 
-def user_feature(to_csv=0):
+def user_feature(drop_duplicate=0, to_csv=0):
     userLog = pd.read_csv('./input/userLog_201801_201802_for_participants.csv', delimiter = ';')
 
+    if drop_duplicate:userLog = userLog.drop_duplicates(['userCode'],keep='last')
+
+    import datetime
+    userLog['datetime'] = userLog.apply(lambda row : datetime.datetime(row['year'], row['month'], row['day'], row['hour']), axis=1)
+    userLog['weekday'] = userLog['datetime'].dt.dayofweek
+
+    userLog['time_interval'] = '20-23'
+    userLog['time_interval'] = np.where((userLog['hour'] >= 0) & (userLog['hour'] < 9), '0-8', userLog['time_interval'])
+    userLog['time_interval'] = np.where((userLog['hour'] >= 9) & (userLog['hour'] < 20), '9-19', userLog['time_interval'])
+
     # Drop unused columns
-    userLog = userLog.drop(['year','month','day'], axis = 1)# userLog.drop(['year','month','day','hour'], axis = 1)
+    userLog = userLog.drop(['year','month','day', 'hour', 'datetime'], axis = 1)
 
     # create dummies variable for column 'requestedDevice','userAgent','pageReferrer' and also concat them into userLog (Don't Forget to drop used column)
-    dummie_columns = ['requestedDevice','userAgent','pageReferrer']
+    dummie_columns = ['requestedDevice','userAgent','pageReferrer', 'time_interval', 'weekday']
     for i in dummie_columns:
         dummies = pd.get_dummies(userLog[i], prefix = i)
         userLog = pd.concat([userLog, dummies], axis = 1)
@@ -110,5 +138,5 @@ def create_train(path='./input/userLog_201801_201802_for_participants.csv', deli
 
 if __name__ == '__main__':
     item_features(to_csv=1)
-    user_feature(to_csv=1)
+    # user_feature(drop_duplicate=1, to_csv=1)
     # create_train(path='./input/train_large.csv',delimiter=',', to_csv=1)

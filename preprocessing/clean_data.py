@@ -113,8 +113,8 @@ def clean_project_unit():
     null_counts = project_unit.isnull().sum()
     print("Percentage of null values in each column:\n{}".format(null_counts * 100/project_unit_size))
 
-    # Drop the columns with missing values more than 33%
-    half_count = len(project_unit) / 3
+    # Drop the columns with missing values more than 50%
+    half_count = len(project_unit) / 2
     project_unit = project_unit.dropna(thresh = half_count, axis = 1)
     # project_unit.head(5)
 
