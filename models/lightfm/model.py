@@ -7,7 +7,7 @@ sys.path.append('./')
 from features import features
 from metrics import average_precision
 
-is_test = 0
+is_test = 1
 if is_test:
     train = pd.read_csv('./input/train_tiny.csv')
     test = pd.read_csv('./input/test_tiny.csv')
@@ -25,15 +25,16 @@ train = train.drop_duplicates(['userCode','project_id'],keep='last')
 train = train.merge(gp, on=['userCode', 'project_id'], how='left');del gp
 
 # todo 
-project_count = train.groupby(['project_id']).size().to_frame('size') 
-# size_count = project_count.groupby(['size']).size().to_frame('size_count')
+# project_count = train.groupby(['project_id']).size().to_frame('project_interact') 
+# size_count = project_count.groupby(['project_interact']).size().to_frame('size_count')
 # size_count['size_multiply_count'] = size_count.index * size_count['size_count']
 # size_count = size_count.sort_values('size_multiply_count', ascending=False)
 # print(size_count.head())
 # print('mean {} std {}'.format(project_count.mean(), project_count.std()))
 # I think drop less than (mean - sd/2) that is 29.1
-min_interacted = 30 # project_count.mean()
-ignore_project = set(project_count[project_count['size'] < min_interacted].index) 
+# min_interacted = float(project_count.mean()) # 30
+# ignore_project = set(project_count[project_count['project_interact'] < min_interacted].index) 
+ignore_project = []
 print('ignore_project ', len(ignore_project))
 
 
@@ -87,14 +88,14 @@ item_feature_matrix = dataset.build_item_features(item_feature_iterable, normali
 
 from lightfm import LightFM
 
-model = LightFM(loss='warp')
+model = LightFM(loss='warp', random_state=44)
 model.fit(train_interactions,
         item_features=item_feature_matrix,
         user_features=user_feature_matrix,
-        epochs=10
+        epochs=2
         )
 
-is_evaluate=0
+is_evaluate=1
 if is_evaluate:
     from lightfm.evaluation import precision_at_k
     train_precision = precision_at_k(model, train_interactions, k=7, user_features=user_feature_matrix, item_features=item_feature_matrix).mean()
@@ -138,7 +139,7 @@ if is_predict:
             predicted_list.append(top_list)
             progress.update(1)
 
-    to_csv = 1
+    to_csv = 0
     if to_csv:
         test['project_id'] = [' '.join(map(str, pre)) for pre in predicted_list]
         test[['userCode','project_id']].to_csv('submission_{}.csv'.format('lightfm'), index=False)

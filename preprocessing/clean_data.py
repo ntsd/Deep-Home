@@ -36,37 +36,13 @@ def clean_project_main():
 
     #land size to one col by convert to wa
     # Sum project land size to have only one column, wa.
-    proj_main['landSize'] = proj_main['project_land_size_rai']*400 + proj_main['project_land_size_ngan']*100 + proj_main['project_land_size_wa']
+    proj_main['land_size'] = proj_main['project_land_size_rai']*400 + proj_main['project_land_size_ngan']*100 + proj_main['project_land_size_wa']
     proj_main = proj_main.drop(['project_land_size_rai','project_land_size_ngan','project_land_size_wa'],axis=1)
     # proj_main['project_land_size_rai'] = proj_main['project_land_size_rai']*400
     # proj_main['project_land_size_ngan'] = proj_main['project_land_size_ngan']*100
     # print(proj_main[['project_land_size_ngan','project_land_size_wa','project_land_size_rai']].head())
     # # get max area
-    # proj_main['landSize'] = proj_main[['project_land_size_ngan','project_land_size_wa','project_land_size_rai']].max(axis=1)
-
-    #change price to 4 category  0 (lowest), 1 (low), 2 (medium), and 3 (high)
-    i = 'Log_starting_price'
-
-    # Log Transform
-    proj_main[i] = np.log(proj_main['starting_price'])
-    q75, q50, q25 = np.percentile(proj_main.Log_starting_price.dropna(), [75 ,50, 25])
-    min_ = q25
-    mid_ = q50
-    max_ = q75
-    # plt.figure(figsize=(10,8))
-    # plt.subplot(211)
-    # plt.xlim(proj_main[i].min(), proj_main[i].max()*1.1)
-    # plt.axvline(x=min)
-    # plt.axvline(x=mid)
-    # plt.axvline(x=max)
-    # ax = proj_main[i].plot(kind='kde')
-    proj_main['starting_price_range'] = 0
-    proj_main.loc[proj_main[i] < min_, 'starting_price_range'] = 0
-    proj_main.loc[((proj_main[i] > min_) & (proj_main[i] < mid_)), 'starting_price_range'] = 1
-    proj_main.loc[((proj_main[i] > mid_) & (proj_main[i] < max_)), 'starting_price_range'] = 2
-    proj_main.loc[proj_main[i] > max_, 'starting_price_range'] = 3
-    proj_main = proj_main.drop(['starting_price', i], axis = 1)
-    # print(proj_main.head(3))
+    # proj_main['land_size'] = proj_main[['project_land_size_ngan','project_land_size_wa','project_land_size_rai']].max(axis=1)
 
     #merge faclility
     facility = pd.read_csv('./input/project_facility.csv', delimiter=';')
@@ -114,8 +90,9 @@ def clean_project_unit():
     print("Percentage of null values in each column:\n{}".format(null_counts * 100/project_unit_size))
 
     # Drop the columns with missing values more than 50%
-    half_count = len(project_unit) / 2
-    project_unit = project_unit.dropna(thresh = half_count, axis = 1)
+    # half_count = len(project_unit) / 3
+    # project_unit = project_unit.dropna(thresh = half_count, axis = 1)
+    project_unit = project_unit.drop(['amount_car_parking','unit_starting_land_size','unit_highest_land_size','unit_functional_space_highest_size','starting_price', 'highest_price', 'starting_price_per_area'], axis = 1)
     # project_unit.head(5)
 
     # Method 1 : Fill missing values with mode grouped by unit_type_id and project_id,
@@ -136,7 +113,7 @@ def clean_project_unit():
     # project_unit.head(10)
 
     # do Method 2  Create a new dataframe
-    cleaned_project_unit = pd.DataFrame(columns = ['project_id','unit_type_id','amount_bedroom','amount_bathroom','amount_car_parking','unit_functional_space_starting_size'])
+    cleaned_project_unit = pd.DataFrame(columns = ['project_id','unit_type_id','amount_bedroom','amount_bathroom','unit_functional_space_starting_size'])
 
     # loop for each row in project_unit, fill the zero value and append it to new dataframe
     for i in project_unit.iterrows():
@@ -148,8 +125,8 @@ def clean_project_unit():
         if(i[1]['amount_bathroom'] == 0):
             i[1]['amount_bathroom'] = fill_key_values[unit_type_id]['amount_bathroom']
         #check amount car parking
-        if(i[1]['amount_car_parking'] == 0):
-            i[1]['amount_car_parking'] = fill_key_values[unit_type_id]['amount_car_parking']
+        # if(i[1]['amount_car_parking'] == 0):
+        #     i[1]['amount_car_parking'] = fill_key_values[unit_type_id]['amount_car_parking']
         #check unit functional space starting size
         if(i[1]['unit_functional_space_starting_size'] == 0):
             i[1]['unit_functional_space_starting_size'] = fill_key_values[unit_type_id]['unit_functional_space_starting_size']
