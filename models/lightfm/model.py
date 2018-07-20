@@ -33,7 +33,7 @@ project_count = train.groupby(['project_id']).size().to_frame('size')
 # print('mean {} std {}'.format(project_count.mean(), project_count.std()))
 # I think drop less than (mean - sd/2) that is 29.1
 min_interacted = 30 # project_count.mean()
-ignore_project = set(project_count[project_count['size'] > min_interacted].index) 
+ignore_project = set(project_count[project_count['size'] < min_interacted].index) 
 print('ignore_project ', len(ignore_project))
 
 
@@ -91,7 +91,7 @@ model = LightFM(loss='warp')
 model.fit(train_interactions,
         item_features=item_feature_matrix,
         user_features=user_feature_matrix,
-        epochs=2
+        epochs=10
         )
 
 is_evaluate=0
@@ -99,15 +99,15 @@ if is_evaluate:
     from lightfm.evaluation import precision_at_k
     train_precision = precision_at_k(model, train_interactions, k=7, user_features=user_feature_matrix, item_features=item_feature_matrix).mean()
     print('Precision: train %.10f.' % train_precision)
-    # (test_interactions, weights) = dataset.build_interactions(data=((row['userCode'], row['project_id'])for index, row in test.iterrows()))
-    # test_precision = precision_at_k(model,
-    #                                 test_interactions,
-    #                                 train_interactions=train_interactions,
-    #                                 k=7,
-    #                                 user_features=user_feature_matrix,
-    #                                 item_features=item_feature_matrix
-    #                                 ).mean()
-    # print('Precision: test %.10f.' % test_precision)
+    (test_interactions, weights) = dataset.build_interactions(data=((row['userCode'], row['project_id'])for index, row in test.iterrows() if row['project_id'] not in ignore_project))
+    test_precision = precision_at_k(model,
+                                    test_interactions,
+                                    train_interactions=train_interactions,
+                                    k=7,
+                                    user_features=user_feature_matrix,
+                                    item_features=item_feature_matrix
+                                    ).mean()
+    print('Precision: test %.10f.' % test_precision)
 
 is_predict=1
 if is_predict:

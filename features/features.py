@@ -138,5 +138,5 @@ def create_train(path='./input/userLog_201801_201802_for_participants.csv', deli
 
 if __name__ == '__main__':
     item_features(to_csv=1)
-    # user_feature(drop_duplicate=1, to_csv=1)
+    user_feature(drop_duplicate=1, to_csv=1)
     # create_train(path='./input/train_large.csv',delimiter=',', to_csv=1)
