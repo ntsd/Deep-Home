@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 
+import os
 import sys
 import tqdm
 import pickle
@@ -73,6 +74,8 @@ warp_model = LightFM(no_components=num_components,
 warp_duration = []
 warp_pre = []
 
+old_precission = 0
+old_pickle_name = ''
 for epoch in range(epochs):
     start = time.time()
     warp_model.fit_partial(train_interactions, epochs=1, num_threads=8)
@@ -85,9 +88,13 @@ for epoch in range(epochs):
     warp_pre.append(precission)
     print('Fit Model Finish Epoch: {} ACC: {} TIME {}:'.format(epoch, precission, time_))
     # save model checkpoint
-    if not is_test:
-        with open('warp_model_{}_{}.pickle'.format(epoch, precission), 'wb') as file_:
+    if not is_test and if precission > old_precission:
+        pickle_name = 'warp_model_{}_{}.pickle'.format(epoch, precission)
+        with open(pickle_name, 'wb') as file_:
             pickle.dump(warp_model, file_, protocol=pickle.HIGHEST_PROTOCOL)
+        if old_pickle_name != '':os.remove(old_pickle_name) 
+        old_pickle_name = pickle_name
+    old_precission = precission
 
 # predict
 is_predict = 1
@@ -123,8 +130,8 @@ if is_predict:
     to_csv = 1
     if to_csv:
         test['project_id'] = [' '.join(map(str, pre)) for pre in predicted_list]
-        csv_file_name = 'submission_{}_{}_{}_no_feature_no_clean_no_drop_usercode'.format(num_components, alpha, schedule)
-        test[['userCode','project_id']].to_csv('{}.csv'.format(csv_file_name), index=False)
+        csv_name = 'submission_{}_{}_{}_no_feature_no_clean_no_drop_usercode.csv'.format(num_components, alpha, schedule)
+        test[['userCode','project_id']].to_csv(csv_name, index=False)
 
     if is_test:
         actual_list = [[pid] for pid in test['project_id'].values]
