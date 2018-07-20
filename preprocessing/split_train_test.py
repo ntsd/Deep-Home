@@ -8,12 +8,21 @@ def split_data(set_name='', nrows=None):
     # split test to last in user
     # get only duplicate
     user_log_df_dup = user_log_df[user_log_df.duplicated(subset='userCode',keep=False)]
-    print('only duplicate user', user_log_df.shape)
+    print('only duplicate user', user_log_df_dup.shape)
     # to get last user duplicate
-    df_test = user_log_df_dup.drop_duplicates(subset='userCode', keep="last")[['userCode','project_id']]
+    df_test = user_log_df_dup.drop_duplicates(subset='userCode', keep="last")
+    # print(df_test.head())
     # to drop last deplicate
-    df_train = user_log_df[~(user_log_df[['userCode','project_id']].isin(df_test.to_dict('list')).all(axis=1))]
-    
+    df_train = user_log_df[~(user_log_df.index.isin(df_test.index))]
+
+    print('df_train',df_train.shape)
+
+    # drop duplicate projectid usercode to test
+    userproject = [row['userCode']+str(row['project_id']) for index, row in df_test.iterrows()]
+    df_train['userproject'] = [row['userCode']+str(row['project_id']) for index, row in df_train.iterrows()]
+    df_train = df_train[~df_train['userproject'].isin(userproject)]
+
+    # print(df_train.head(10))
     print('df_train',df_train.shape)
     print('df_test', df_test.shape)
 
