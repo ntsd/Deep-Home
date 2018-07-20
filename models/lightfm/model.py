@@ -52,7 +52,6 @@ iteam_iterable = (row for row in unique_project)
 
 # build item feature
 item_feature_df = pd.read_csv('./input/item_feature.csv')
-# item_feature_df.drop(['landSize', 'unit_functional_space_starting_size'], axis=1, inplace=True) # drop for only normalize
 item_feature_names = list(item_feature_df)[1:]
 item_feature_df = item_feature_df[item_feature_df['project_id'].isin(unique_project)]
 item_feature_iterable = ((row['project_id'], {feature_name: row[feature_name] for feature_name in item_feature_names})for index, row in item_feature_df.iterrows())
@@ -88,14 +87,13 @@ item_feature_matrix = dataset.build_item_features(item_feature_iterable, normali
 
 from lightfm import LightFM
 
-model = LightFM(loss='warp', random_state=44)
+model = LightFM(loss='warp', random_state=44, learning_schedule='adagrad')
 model.fit(train_interactions,
         item_features=item_feature_matrix,
         user_features=user_feature_matrix,
-        epochs=2
         )
 
-is_evaluate=1
+is_evaluate=0
 if is_evaluate:
     from lightfm.evaluation import precision_at_k
     train_precision = precision_at_k(model, train_interactions, k=7, user_features=user_feature_matrix, item_features=item_feature_matrix).mean()
@@ -110,7 +108,9 @@ if is_evaluate:
                                     ).mean()
     print('Precision: test %.10f.' % test_precision)
 
-is_predict=1
+
+
+is_predict=0
 if is_predict:
     num_project = len(unique_project)
     unique_user_list = unique_user.tolist()
