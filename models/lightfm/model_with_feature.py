@@ -45,14 +45,37 @@ unique_user = train['userCode'].drop_duplicates()
 user_iterable = (row for row in unique_user)
 iteam_iterable = (row for row in unique_project)
 
+# build item feature
+item_feature_df = pd.read_csv('./input/item_feature.csv')
+item_feature_names = list(item_feature_df)[1:]
+item_feature_df = item_feature_df[item_feature_df['project_id'].isin(unique_project)]
+item_feature_iterable = ((row['project_id'], {feature_name: row[feature_name] for feature_name in item_feature_names})for index, row in item_feature_df.iterrows())
+
+# build user feature
+user_feature_df = pd.read_csv('./input/user_feature.csv')
+user_feature_names = list(user_feature_df)[1:]
+user_feature_df = user_feature_df[user_feature_df['userCode'].isin(unique_user)]
+user_feature_iterable = ((row['userCode'], {feature_name: row[feature_name] for feature_name in user_feature_names})for index, row in user_feature_df.iterrows())
+
 # fit dataset
 dataset.fit(users=user_iterable,
-            items=iteam_iterable
+            items=iteam_iterable,
+            user_features=user_feature_names,
+            item_features=item_feature_names
             )
 
 # check shape
 num_users, num_items = dataset.interactions_shape()
 print('Num users: {}, num_items: {}.'.format(num_users, num_items))
+_, num_users_feature = dataset.user_features_shape()
+_, num_items_feature = dataset.item_features_shape()
+print('Num users feature: {}, num_items feature: {}.'.format(num_users_feature, num_items_feature))
+
+# build user feature matrix
+user_feature_matrix = dataset.build_user_features(user_feature_iterable, normalize=True)
+
+# build item feature matrix
+item_feature_matrix = dataset.build_item_features(item_feature_iterable, normalize=True)
 
 (train_interactions, _) = dataset.build_interactions(data=((row['userCode'], row['project_id'])for index, row in train.iterrows()))
 if is_test:
@@ -79,13 +102,19 @@ max_precission = 0
 old_pickle_name = ''
 for epoch in range(epochs):
     start = time.time()
-    warp_model.fit_partial(train_interactions, epochs=1, num_threads=8)
+    warp_model.fit_partial(train_interactions,
+                        epochs=1,
+                        num_threads=8,
+                        item_features=item_feature_matrix,
+                        user_features=user_feature_matrix,)
     time_=time.time() - start
     warp_duration.append(time_)
     if is_test:
-        precission=precision_at_k(warp_model, test_interactions, train_interactions=train_interactions, k=7).mean()
+        precission=precision_at_k(warp_model, test_interactions, train_interactions=train_interactions,
+         k=7, user_features=user_feature_matrix, item_features=item_feature_matrix).mean()
     else:
-        precission=precision_at_k(warp_model, train_interactions, k=7).mean()
+        precission=precision_at_k(warp_model, train_interactions, k=7,
+         user_features=user_feature_matrix, item_features=item_feature_matrix).mean()
     warp_pre.append(precission)
     print('Fit Model Finish Epoch: {} ACC: {} TIME {}:'.format(epoch, precission, time_))
     # save model checkpoint
@@ -115,8 +144,8 @@ if is_predict:
         for uid in test['userCode'].unique():
             predictions = warp_model.predict(unique_user_list.index(uid),
                                     np.arange(num_project),
-                                    # user_features=user_feature_matrix,
-                                    # item_features=item_feature_matrix
+                                    user_features=user_feature_matrix,
+                                    item_features=item_feature_matrix
                                     )
             top_items = unique_project.iloc[np.argsort(-predictions)]
             top_list = []

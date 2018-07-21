@@ -1,3 +1,4 @@
+
 import pandas as pd
 import numpy as np
 
@@ -28,8 +29,8 @@ print('train', train.shape)
 train = train.drop_duplicates(['userCode','project_id'],keep='last')
 
 # drop train userCode not in test UserCode todo
-unique_test = test['userCode'].unique()
-train = train[train['userCode'].isin(unique_test)]
+# unique_test = test['userCode'].unique()
+# train = train[train['userCode'].isin(unique_test)]
 
 print('train', train.shape)
 
@@ -54,50 +55,15 @@ dataset.fit(users=user_iterable,
 num_users, num_items = dataset.interactions_shape()
 print('Num users: {}, num_items: {}.'.format(num_users, num_items))
 
-(train_interactions, _) = dataset.build_interactions(data=((row['userCode'], row['project_id'])for index, row in train.iterrows()))
+# (train_interactions, _) = dataset.build_interactions(data=((row['userCode'], row['project_id'])for index, row in train.iterrows()))
 if is_test:
     (test_interactions, _) = dataset.build_interactions(data=((row['userCode'], row['project_id'])for index, row in test.iterrows()))
 
-# create Model
-epochs = 70 # 60
-alpha=0.001
-num_components=128 # 256 # 512
-schedule='adagrad'
-
-warp_model = LightFM(no_components=num_components,
-                            loss='warp',
-                            learning_schedule=schedule,
-                            user_alpha=alpha,
-                            item_alpha=alpha,
-                            # random_state=44
-                            )
-
-warp_duration = []
-warp_pre = []
-
-max_precission = 0
-old_pickle_name = ''
-for epoch in range(epochs):
-    start = time.time()
-    warp_model.fit_partial(train_interactions, epochs=1, num_threads=8)
-    time_=time.time() - start
-    warp_duration.append(time_)
-    if is_test:
-        precission=precision_at_k(warp_model, test_interactions, train_interactions=train_interactions, k=7).mean()
-    else:
-        precission=precision_at_k(warp_model, train_interactions, k=7).mean()
-    warp_pre.append(precission)
-    print('Fit Model Finish Epoch: {} ACC: {} TIME {}:'.format(epoch, precission, time_))
-    # save model checkpoint
-    # if precission < max_precission:
-    #     break
-    if not is_test and precission > max_precission:
-        pickle_name = 'warp_model_{}_{}_drop_usercode.pickle'.format(epoch, precission)
-        with open(pickle_name, 'wb') as file_:
-            pickle.dump(warp_model, file_, protocol=pickle.HIGHEST_PROTOCOL)
-        # if old_pickle_name != '':os.remove(old_pickle_name) 
-        old_pickle_name = pickle_name
-        max_precission = precission
+# load model
+model_path = "warp_model_8_0.007098305970430374.pickle"
+file_ = open(model_path,'rb')
+model = pickle.load(file_)
+file_.close()
 
 # predict
 is_predict = 1
@@ -113,7 +79,7 @@ if is_predict:
 
     with tqdm.tqdm(total=len(test)) as progress:
         for uid in test['userCode'].unique():
-            predictions = warp_model.predict(unique_user_list.index(uid),
+            predictions = model.predict(unique_user_list.index(uid),
                                     np.arange(num_project),
                                     # user_features=user_feature_matrix,
                                     # item_features=item_feature_matrix
@@ -133,30 +99,9 @@ if is_predict:
     to_csv = 1
     if to_csv:
         test['project_id'] = [' '.join(map(str, pre)) for pre in predicted_list]
-        csv_name = 'submission_{}_{}_{}_no_feature_no_clean_drop_usercode.csv'.format(num_components, alpha, schedule)
+        csv_name = 'submission_no_feature_no_clean_no_drop_usercode_{}.csv'.format(time.strftime("%Y%m%d-%H%M%S"))
         test[['userCode','project_id']].to_csv(csv_name, index=False)
 
     if is_test:
         actual_list = [[pid] for pid in test['project_id'].values]
         print('%.10f'%average_precision.mapk(actual_list, predicted_list, k=7))
-
-# plot graph
-x = np.arange(len(warp_pre))
-plt.plot(x, np.array(warp_pre))
-plt.legend(['WARP P@K'], loc='upper right')
-eval_name = 'eval_{}_{}_{}_warp_no_feature_no_clean_drop_user'.format(num_components, alpha, schedule)
-plt.savefig('{}.png'.format(eval_name))
-plt.clf()
-plt.cla()
-eval_df = pd.DataFrame({'WARP_PAK': warp_pre})
-eval_df.to_csv('{}.csv'.format(eval_name), index=False)
-
-x = np.arange(len(warp_duration))
-plt.plot(x, np.array(warp_duration))
-plt.legend(['WARP duration'], loc='upper right')
-time_name = 'time_{}_{}_{}_warp_no_feature_no_clean_drop_user'.format(num_components, alpha, schedule)
-plt.savefig('{}.png'.format(time_name))
-plt.clf()
-plt.cla()
-time_df = pd.DataFrame({'WARP_TIME': warp_duration})
-time_df.to_csv('{}.csv'.format(time_name), index=False)
