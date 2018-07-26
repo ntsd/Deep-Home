@@ -43,7 +43,7 @@ def split_data(set_name='', nrows=None):
     df_test.to_csv('./input/test_{}.csv'.format(set_name))
 
 if __name__ == '__main__':
-    split_data(set_name='small', nrows=10000)
+    split_data(set_name='10000', nrows=10000)
     # split_data(set_name='medium', nrows=50000)
     # split_data(set_name='big', nrows=100000)
     

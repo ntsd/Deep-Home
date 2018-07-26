@@ -4,25 +4,23 @@ from scipy import stats
 import numpy as np
 
 def clean_project_main():
-    proj_main = pd.read_csv('./input/project_main.csv', delimiter =';').set_index('project_id') 
+    proj_main = pd.read_csv('./input/project_main.csv', delimiter =';') 
     print(proj_main.shape)
 
     # Display percentage of unique values in each column
     proj_main_size = len(proj_main)
     num_unique = proj_main.nunique()
-    # print("Percentage of unique values in each column:\n{}".format(num_unique * 100/proj_main_size))
+    print("Percentage of unique values in each column:\n{}".format(num_unique * 100/proj_main_size))
+
     # Drop any columns with more than 30% missing values
     proj_main.drop(['created_at', 'lat', 'lon', 'project_name_th',
     'developer_id', 'brand_id','project_name_en'], axis=1, inplace=True)
 
-    # check null and zeros value
+    # check null value
     proj_main_size = len(proj_main)
     null_counts = proj_main.isnull().sum()
-    # print("Percentage of null values in each column:\n{}".format(null_counts * 100/proj_main_size))
-    zeroes_counts = proj_main_size-proj_main.astype(bool).sum()
-    # print("Percentage of null values in each column:\n", zeroes_counts * 100/proj_main_size)
-    null_zero_counts = (zeroes_counts+null_counts) * 100/proj_main_size
-    # print("Percentage of null and zero values in each column:\n", null_zero_counts)
+    print("Percentage of null values in each column:\n{}".format(null_counts * 100/proj_main_size))
+
     # drop high percent null
     proj_main.drop(['percent_car_parking', 'highest_price', 'total_unit'], axis=1, inplace=True)
 
@@ -30,19 +28,14 @@ def clean_project_main():
     proj_main = proj_main.dropna(axis=0)
 
     # All of them must be 0
-    # proj_main_size = len(proj_main)
-    # null_counts = proj_main.isnull().sum()
-    # print("Percentage of null values in each column:\n{}".format(null_counts * 100/proj_main_size)) 
+    proj_main_size = len(proj_main)
+    null_counts = proj_main.isnull().sum()
+    print("Percentage of null values in each column:\n{}".format(null_counts * 100/proj_main_size)) 
 
     #land size to one col by convert to wa
     # Sum project land size to have only one column, wa.
     proj_main['land_size'] = proj_main['project_land_size_rai']*400 + proj_main['project_land_size_ngan']*100 + proj_main['project_land_size_wa']
     proj_main = proj_main.drop(['project_land_size_rai','project_land_size_ngan','project_land_size_wa'],axis=1)
-    # proj_main['project_land_size_rai'] = proj_main['project_land_size_rai']*400
-    # proj_main['project_land_size_ngan'] = proj_main['project_land_size_ngan']*100
-    # print(proj_main[['project_land_size_ngan','project_land_size_wa','project_land_size_rai']].head())
-    # # get max area
-    # proj_main['land_size'] = proj_main[['project_land_size_ngan','project_land_size_wa','project_land_size_rai']].max(axis=1)
 
     #merge faclility
     facility = pd.read_csv('./input/project_facility.csv', delimiter=';')
@@ -71,15 +64,14 @@ def clean_project_main():
             proj_main.at[prj,'facility_6'] = 1
 
     proj_main = proj_main.dropna(axis=0)
-    
-    # change project status A to 1 U to 0
-    # proj_main['project_status'] = proj_main['project_status'].apply(lambda x: 1 if x=='A' else 0)
 
     # print(proj_main.head(3))
     print(proj_main.shape)
+
+    proj_main = proj_main.set_index('project_id')
+
     proj_main.to_csv('./input/cleaned_project_main.csv')
 
-   
 
 def clean_project_unit():
     project_unit = pd.read_csv('./input/project_unit.csv', delimiter = ';')
@@ -90,10 +82,10 @@ def clean_project_unit():
     print("Percentage of null values in each column:\n{}".format(null_counts * 100/project_unit_size))
 
     # Drop the columns with missing values more than 50%
-    # half_count = len(project_unit) / 3
+    half_count = len(project_unit) / 2
     # project_unit = project_unit.dropna(thresh = half_count, axis = 1)
     project_unit = project_unit.drop(['amount_car_parking','unit_starting_land_size','unit_highest_land_size','unit_functional_space_highest_size','starting_price', 'highest_price', 'starting_price_per_area'], axis = 1)
-    # project_unit.head(5)
+    project_unit.head(5)
 
     # Method 1 : Fill missing values with mode grouped by unit_type_id and project_id,
     # Method 2 : Fill missing values with mode grouped by unit_type_id only.
@@ -101,7 +93,7 @@ def clean_project_unit():
     # Preparing fill dataframe for method 2
     unit_type_mode = project_unit.drop(['project_id'], axis = 1)
     unit_type_mode = unit_type_mode.groupby(['unit_type_id']).agg(lambda x: stats.mode(x)[0][0]).reset_index()
-    # unit_type_mode.head(6)
+    print(unit_type_mode.head(10))
     # Note: you can use other metrics such as mean, median for this methods.
 
     # Generate fill key-value by using unit_type_id as a main key
@@ -124,10 +116,6 @@ def clean_project_unit():
         #check amount bathroom
         if(i[1]['amount_bathroom'] == 0):
             i[1]['amount_bathroom'] = fill_key_values[unit_type_id]['amount_bathroom']
-        #check amount car parking
-        # if(i[1]['amount_car_parking'] == 0):
-        #     i[1]['amount_car_parking'] = fill_key_values[unit_type_id]['amount_car_parking']
-        #check unit functional space starting size
         if(i[1]['unit_functional_space_starting_size'] == 0):
             i[1]['unit_functional_space_starting_size'] = fill_key_values[unit_type_id]['unit_functional_space_starting_size']
         cleaned_project_unit = cleaned_project_unit.append(i[1],ignore_index = True)
@@ -138,8 +126,13 @@ def clean_project_unit():
     cleaned_null_counts = cleaned_project_unit.isnull().sum()
     print("Percentage of null values in each column:\n{}".format(cleaned_null_counts * 100/cleaned_project_unit_size))
 
+    print(cleaned_project_unit.shape)
+    cleaned_project_unit = cleaned_project_unit.groupby(['project_id']).agg(lambda x: stats.mode(x)[0][0]).reset_index()
+    print(cleaned_project_unit.shape)
+
     # Save cleaned project_unit dataframe to csv
     cleaned_project_unit = cleaned_project_unit.set_index('project_id')
+
     cleaned_project_unit.to_csv('./input/cleaned_project_unit.csv')
 
 if __name__ == '__main__':

@@ -121,7 +121,6 @@ if __name__ == '__main__':
 
     feature_imprtances(clf)
 
-    sys.exit()
     # Read 'user_feature.csv' and 'item_feature.csv' using pandas
     user_feat = pd.read_csv('./input/user_feature.csv')
     item_feat = pd.read_csv('./input/item_feature.csv')

@@ -20,10 +20,17 @@ def item_features(to_csv=0):
 
     # Merge project_unit and project_main together with project id
     project_unit_main = project_main.merge(project_unit, on = ['project_id'])
-    # print(project_unit_main.head(3))
+
+    # change project status A to 1 U to 0
+    project_unit_main['project_status'] = project_unit_main['project_status'].apply(lambda x: 1 if x=='A' else 0)
+
+    # add project interacts feature
+    userLog = pd.read_csv('./input/userLog_201801_201802_for_participants.csv', delimiter = ';')
+    project_interact = userLog.groupby(['project_id']).size().to_frame('project_interact')
+    project_unit_main = project_unit_main.merge(project_interact, on='project_id' )
 
     # do quantile data
-    quantile_columns = []
+    quantile_columns = ['land_size', 'unit_functional_space_starting_size', 'starting_price', 'project_interact']
     new_cols = []
     for col in quantile_columns:
         i = 'dummy_culumn'
@@ -41,30 +48,21 @@ def item_features(to_csv=0):
         new_cols.append(col+'_range')
 
     # Create dummie variable for column 'district_id','province_id','project_status','starting_price_range','unit_type_id','amount_bedroom','amount_bathroom','amount_car_parking'
-    dummie_columns = new_cols + ['district_id','province_id','unit_type_id']
-    # dummie_columns = ['district_id','province_id','unit_type_id']
+    dummie_columns = new_cols + ['amount_bedroom','amount_bathroom','district_id','province_id','unit_type_id']
     for i in dummie_columns:
         dummies = pd.get_dummies(project_unit_main[i], prefix = i)
         # if len(dummies.columns)>2: # to create dummy only values len > 2
         project_unit_main = pd.concat([project_unit_main, dummies], axis = 1)
         project_unit_main = project_unit_main.drop(i, axis = 1)
 
-    # change project status A to 1 U to 0
-    project_unit_main['project_status'] = project_unit_main['project_status'].apply(lambda x: 1 if x=='A' else 0)
-
-    # add project interacts feature
-    userLog = pd.read_csv('./input/userLog_201801_201802_for_participants.csv', delimiter = ';')
-    project_interact = userLog.groupby(['project_id']).size().to_frame('project_interact')
-    project_unit_main = project_unit_main.merge(project_interact, on='project_id' )
-
     #norm column
-    norm_columns = ['amount_bedroom','amount_bathroom','land_size', 'unit_functional_space_starting_size', 'starting_price', 'project_interact']
+    norm_columns = []
     for col in norm_columns:
         project_unit_main[col] = (project_unit_main[col] - project_unit_main[col].min()) / (project_unit_main[col].max() - project_unit_main[col].min())
 
     # drop unimportance feature
     # userLog = userLog.drop(['userAgent_Other_OS'], axis = 1)
-    
+
     # Save project_unit_main dataframe to csv
     if to_csv:
         project_unit_main.to_csv('./input/item_feature.csv', index = False)
@@ -94,15 +92,33 @@ def user_feature(drop_duplicate=0, to_csv=0):
     # Drop unused columns
     userLog = userLog.drop(['year','month','day', 'hour', 'datetime'], axis = 1)
 
+    # do quantile data
+    quantile_columns = ['user_interact']
+    new_cols = []
+    for col in quantile_columns:
+        i = 'dummy_culumn'
+        userLog[i] = np.log(userLog[col])
+        q75, q50, q25 = np.percentile(userLog[i].dropna(), [75 ,50, 25])
+        min_ = q25
+        mid_ = q50
+        max_ = q75
+        userLog[col+'_range'] = 0
+        userLog.loc[userLog[i] < min_, col+'_range'] = 0
+        userLog.loc[((userLog[i] > min_) & (userLog[i] < mid_)), col+'_range'] = 1
+        userLog.loc[((userLog[i] > mid_) & (userLog[i] < max_)), col+'_range'] = 2
+        userLog.loc[userLog[i] > max_, col+'_range'] = 3
+        userLog = userLog.drop([col, i], axis = 1)
+        new_cols.append(col+'_range')
+
     # create dummies variable for column 'requestedDevice','userAgent','pageReferrer' and also concat them into userLog (Don't Forget to drop used column)
-    dummie_columns = ['requestedDevice','userAgent','pageReferrer', 'time_interval', 'weekday']
+    dummie_columns = ['requestedDevice','userAgent','pageReferrer', 'time_interval', 'weekday'] + new_cols
     for i in dummie_columns:
         dummies = pd.get_dummies(userLog[i], prefix = i)
         userLog = pd.concat([userLog, dummies], axis = 1)
         userLog = userLog.drop(i, axis = 1)
 
     #norm column
-    norm_columns = ['user_interact']
+    norm_columns = []
     for col in norm_columns:
         userLog[col] = (userLog[col] - userLog[col].min()) / (userLog[col].max() - userLog[col].min())
 
@@ -162,7 +178,7 @@ def create_train(train=None, to_csv=0):
     return train, visited_dict
 
 if __name__ == '__main__':
-    # item_features(to_csv=1)
-    user_feature(drop_duplicate=1, to_csv=1)
+    item_features(to_csv=1)
+    # user_feature(drop_duplicate=1, to_csv=1)
     # train = pd.read_csv('./input/userLog_201801_201802_for_participants.csv', delimiter=';') # load userLog
     # create_train(train, to_csv=1)
